@@ -1,85 +1,177 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+# MicroService_Ecom - Scheduler Service
 
-## Description
+## Overview
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This project is a **scheduler microservice** built using **NestJS**, a progressive Node.js framework. The microservice allows for the scheduling of customizable jobs while maintaining essential job-related information. The service provides RESTful API endpoints for job management, enabling users to list all jobs, retrieve details of a specific job by ID, and create new jobs.
 
-## Project setup
+The system utilizes **PostgreSQL** for persistent data storage and **Redis** for caching to enhance performance. Additionally, the microservice includes **monitoring** capabilities using **Prometheus** for metrics collection and **Grafana** for visualizing metrics. **Nginx** is used as a load balancer, ensuring scalability and distribution of traffic across multiple service instances.
 
-```bash
-$ npm install
+---
+
+## Project Structure
+
+### Key Components
+
+#### 1. `docker-compose.yml`
+The `docker-compose.yml` file defines all services necessary for running the application. This includes:
+- **PostgreSQL**: The relational database to store job data.
+- **Redis**: The in-memory cache store for optimizing frequently accessed data.
+- **Scheduler Service**: The microservice that handles job scheduling and job management API requests.
+- **Nginx**: Acts as a load balancer, distributing traffic across multiple instances of the microservice to ensure high availability.
+- **Prometheus**: For collecting metrics about the application's performance.
+- **Grafana**: For visualizing metrics collected by Prometheus.
+
+Each service is defined with its dependencies and environment variables.
+
+#### 2. `Dockerfile`
+The `Dockerfile` contains instructions to build the Docker image for the scheduler microservice:
+- **Base Image**: It uses an official Node.js image.
+- **Dependency Installation**: Installs all project dependencies defined in `package.json`.
+- **Copy Application Code**: Copies the application source code into the container.
+- **Build & Run**: Builds the application and sets the command to start the NestJS application inside the container.
+
+This setup ensures the microservice can run consistently across various environments.
+
+#### 3. `nginx.conf`
+This file contains the configuration for **Nginx** as a load balancer. It:
+- Distributes incoming HTTP requests across multiple instances of the scheduler microservice.
+- Provides basic logging for incoming requests to help with monitoring and debugging.
+
+This is crucial for handling high traffic loads and ensuring scalability by distributing the workload evenly.
+
+#### 4. `prometheus.yml`
+Configures **Prometheus** to scrape metrics from different services, including:
+- **Nginx**: To monitor the number of HTTP requests and latency.
+- **Scheduler Service**: To monitor its performance and resource usage.
+
+It specifies the intervals at which Prometheus should scrape the targets and the specific endpoints to monitor.
+
+#### 5. `src/`
+This folder contains the source code for the scheduler microservice, structured following NestJS conventions:
+
+- **`app.module.ts`**: The root module where other modules are imported, including the `JobModule` and `RedisModule`.
+- **`main.ts`**: The entry point for the NestJS application, where global settings are defined (like validation pipes, Swagger documentation, etc.).
+- **`job/`**: This folder contains all job-related logic.
+  - **`job.controller.ts`**: Defines the RESTful API endpoints to interact with job data (GET, POST).
+  - **`job.service.ts`**: Contains the business logic for managing jobs, including scheduling, retrieving, and persisting jobs in PostgreSQL.
+  - **`entities/`**: Defines the **Job** entity, a TypeORM model that maps job data to the PostgreSQL database.
+  - **`dto/`**: Defines **Data Transfer Objects** (DTOs) used for input validation and data structures when creating and updating jobs.
+- **`redis/`**: Manages the Redis cache, storing frequently accessed job data to reduce load on the database.
+
+---
+
+## Functionality
+
+### Job Scheduling
+The microservice allows users to schedule jobs with customizable parameters such as frequency (using cron expressions) and job attributes. It uses the **`node-cron`** library to handle scheduling. This ensures that jobs run automatically at specified intervals without manual intervention.
+
+### API Endpoints
+The following API endpoints are available for job management:
+
+1. **GET `/jobs`**:  
+   Lists all available jobs with their details. This endpoint returns information such as job ID, name, status, last run, and next run timestamps.
+
+2. **GET `/jobs/:id`**:  
+   Retrieves detailed information about a specific job using its unique ID. This includes all job attributes and its scheduling details.
+
+3. **POST `/jobs`**:  
+   Creates a new job. Users can specify attributes like job name, scheduling interval (cron expression), and other customizable parameters.
+
+Each endpoint has comprehensive input validation using **DTOs** and `class-validator` to ensure correct data is passed in the API requests.
+
+### Database Integration
+The microservice integrates with **PostgreSQL** to store persistent job data. This includes:
+- **Job Name**: The identifier for the job.
+- **Last Run Timestamp**: When the job last executed.
+- **Next Run Timestamp**: When the job is scheduled to run next.
+- **Cron Expression**: Defines the scheduling interval for the job.
+- **Parameters**: Custom attributes specific to each job.
+
+### Caching
+The microservice uses **Redis** to cache frequently accessed data like job lists and job details. This reduces the load on PostgreSQL, improving response times and overall system performance.
+
+### Monitoring
+To monitor the health and performance of the microservice, the project includes:
+- **Prometheus**: Collects metrics such as request counts, job execution times, and resource utilization.
+- **Grafana**: Provides a user-friendly dashboard to visualize the metrics collected by Prometheus. This helps in tracking the service's performance over time and identifying bottlenecks.
+
+### Scalability
+The microservice is designed to handle large-scale deployments. It can scale horizontally by running multiple instances of the service behind Nginx as a load balancer. Redis ensures distributed caching, which is important for handling high volumes of API requests efficiently.
+
+---
+
+## Setup
+
+### Prerequisites
+Before running the application, ensure the following are installed:
+- **Docker** and **Docker Compose**: For containerized deployment.
+- **Node.js** and **npm**: If running the application locally outside of Docker.
+
+### Environment Variables
+The service relies on certain environment variables for configuration. Ensure the `.env` file is present and contains the following variables:
+
+```env
+PGHOST=postgres
+PGPORT=5432
+PGUSER=postgres
+PGPASSWORD=123456789
+PGDATABASE=scheduler
+REDIS_HOST=redis
+REDIS_PORT=6379
 ```
 
-## Compile and run the project
+These variables configure the connection to PostgreSQL and Redis.
+
+### Running the Application
+
+To start the application, run the following commands:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Build and run all services in the background
+docker-compose up --build -d
 ```
 
-## Run tests
+This will start the scheduler service, PostgreSQL, Redis, Nginx, Prometheus, and Grafana.
+
+### Testing
+
+To run unit and end-to-end tests, use the following commands:
 
 ```bash
-# unit tests
-$ npm run test
+# Run unit tests
+npm run test
 
-# e2e tests
-$ npm run test:e2e
+# Run end-to-end tests
+npm run test:e2e
 
-# test coverage
-$ npm run test:cov
+# Run test coverage
+npm run test:cov
 ```
 
-## Resources
+These tests ensure the correctness of the job management logic and API functionality.
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Monitoring
 
-## Support
+To monitor the application using **Prometheus** and **Grafana**, follow these steps:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+1. Access Prometheus at `http://localhost:9090` and run queries to check metrics. For example, to view the rate of HTTP requests to the microservice:
+   ```bash
+   rate(nginx_http_requests_total[1m])
+   ```
 
-## Stay in touch
+2. Access Grafana at `http://localhost:3000` and log in using the default credentials (`admin/admin`). You can then view predefined dashboards to visualize various metrics.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## Conclusion
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This scheduler microservice demonstrates a production-ready architecture using **NestJS** with a focus on scalability, performance, and monitoring. It provides a flexible job scheduling system, with robust API management, caching, and monitoring to ensure high performance in large-scale environments.
+
+
+--- 
+
+This version expands on the original by providing additional details on the architecture, environment variables, and how each component contributes to the overall system. Additionally, there’s a greater focus on scalability, monitoring, and testing, which are key in any production-ready microservice.
